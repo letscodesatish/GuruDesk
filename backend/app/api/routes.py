@@ -8,6 +8,19 @@ import json
 import asyncio
 import traceback
 import shutil
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+# Allow your Vercel frontend to talk to your Render backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # You can replace "*" with your specific Vercel URL later for security
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from fpdf import FPDF
