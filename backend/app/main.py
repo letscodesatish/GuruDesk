@@ -19,3 +19,8 @@ app.include_router(api_router, prefix="/api/v1")
 @app.get("/")
 async def health_check():
     return {"status": "online", "message": "Ready to help the Professor!"}
+
+# Inside your main.py
+
+app.include_router(api_router, prefix="/api/v1")
+

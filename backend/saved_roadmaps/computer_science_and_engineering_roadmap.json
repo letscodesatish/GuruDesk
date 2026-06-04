@@ -1,0 +1,104 @@
+{
+    "course_title": "Mathematics-I",
+    "total_weeks": 14,
+    "roadmap": [
+        {
+            "week_number": 1,
+            "topics_to_cover": [
+                "Sequences & Series: Definition, Monotonic sequences, Bounded sequences"
+            ],
+            "learning_outcome": "Understand basic concepts of sequences and series"
+        },
+        {
+            "week_number": 2,
+            "topics_to_cover": [
+                "Convergent and Divergent Sequences, Infinite series, Oscillating and Geometric series"
+            ],
+            "learning_outcome": "Identify types of sequences and series"
+        },
+        {
+            "week_number": 3,
+            "topics_to_cover": [
+                "Convergence, nth Term test, Integral test, Comparison Test, Limit Comparison test"
+            ],
+            "learning_outcome": "Apply convergence tests for series"
+        },
+        {
+            "week_number": 4,
+            "topics_to_cover": [
+                "Ratio test, Root test, Alternating series, Absolute and Conditional convergence, Leibnitz test"
+            ],
+            "learning_outcome": "Analyze convergence of series using various tests"
+        },
+        {
+            "week_number": 5,
+            "topics_to_cover": [
+                "Limit Continuity and differentiability of functions of two variables, Euler's theorem for homogeneous equations"
+            ],
+            "learning_outcome": "Understand multivariable functions and Euler's theorem"
+        },
+        {
+            "week_number": 6,
+            "topics_to_cover": [
+                "Tangent plane and normal. Change of variables, chain rule, Jacobians, Taylor's Theorem for two variables"
+            ],
+            "learning_outcome": "Apply concepts to multivariable functions"
+        },
+        {
+            "week_number": 7,
+            "topics_to_cover": [
+                "Extrema of functions of two or more variables, Lagrange's method of undetermined multipliers"
+            ],
+            "learning_outcome": "Find extrema of multivariable functions"
+        },
+        {
+            "week_number": 8,
+            "topics_to_cover": [
+                "Review of curve tracing, Double and Triple integrals"
+            ],
+            "learning_outcome": "Evaluate multiple integrals"
+        },
+        {
+            "week_number": 9,
+            "topics_to_cover": [
+                "Change of order of integration. Change of variables. Gamma and Beta functions, Dirichlet's integral"
+            ],
+            "learning_outcome": "Apply integration techniques"
+        },
+        {
+            "week_number": 10,
+            "topics_to_cover": [
+                "Applications of Multiple integrals such as surface area, volumes"
+            ],
+            "learning_outcome": "Solve problems using multiple integrals"
+        },
+        {
+            "week_number": 11,
+            "topics_to_cover": [
+                "Differentiation of vectors, gradient, divergence, curl and their physical meaning"
+            ],
+            "learning_outcome": "Understand vector calculus concepts"
+        },
+        {
+            "week_number": 12,
+            "topics_to_cover": [
+                "Identities involving gradient, divergence and curl Line and surface integrals Green's, Gauss and Stoke's theorem and their applications"
+            ],
+            "learning_outcome": "Apply vector calculus to solve problems"
+        },
+        {
+            "week_number": 13,
+            "topics_to_cover": [
+                "Concept of probability, random variable and distribution function: discrete and continuous"
+            ],
+            "learning_outcome": "Understand probability concepts"
+        },
+        {
+            "week_number": 14,
+            "topics_to_cover": [
+                "Binomial, Poisson and Normal Distributions"
+            ],
+            "learning_outcome": "Apply probability distributions to solve problems"
+        }
+    ]
+}

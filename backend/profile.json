@@ -1,0 +1,12 @@
+{
+    "name": "Dr. Satish Kumar Sharma",
+    "designation": "Assistant Professor",
+    "department": "Computer Science and Engineering",
+    "email": "johndoe@university.edu",
+    "phone": "+91 98765 43210",
+    "office": "Tech Block, Room 302",
+    "education": "Ph.D. in Machine Learning",
+    "research": "Computer Vision, Neural Networks, AI Safety",
+    "scholar": "https://scholar.google.com/...",
+    "photo": "satish evs image.png"
+}

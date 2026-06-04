@@ -1,0 +1,53 @@
+{
+    "className": "B.Tech CSE 2",
+    "semester": "Semester 4",
+    "assessments": [
+        {
+            "id": "assign1",
+            "name": "Assign 1",
+            "max": 20
+        },
+        {
+            "id": "midterm",
+            "name": "Midterm",
+            "max": 30
+        },
+        {
+            "id": "final",
+            "name": "Final",
+            "max": 50
+        }
+    ],
+    "students": [
+        {
+            "id": 1,
+            "roll": "CS-101",
+            "name": "Alice Johnson",
+            "marks": {
+                "assign1": 18,
+                "midterm": 26,
+                "final": 48
+            }
+        },
+        {
+            "id": 2,
+            "roll": "CS-102",
+            "name": "Bob Smith",
+            "marks": {
+                "assign1": 14,
+                "midterm": 20,
+                "final": 35
+            }
+        },
+        {
+            "id": 3,
+            "roll": "CS-103",
+            "name": "Charlie Davis",
+            "marks": {
+                "assign1": 10,
+                "midterm": 12,
+                "final": 20
+            }
+        }
+    ]
+}

@@ -1,45 +1,63 @@
-import httpx
+import requests
 from bs4 import BeautifulSoup
-import os
+from urllib.parse import urljoin
 
-# We make this function 'async' so it doesn't freeze the server while downloading
-async def fetch_csjmu_syllabus(subject_name: str) -> str:
-   # 1. Map common abbreviations to the exact website text
-    subject_map = {
-        "b.tech cse": "Computer Science and Engineering",
-        "b.tech it": "Information Technology",
-        "b.tech mech": "Mechanical Engineering"
-    }
+async def fetch_csjmu_syllabus(subject_name: str) -> dict:
+    """Scrapes the CSJMU site using smart keyword matching for all branches."""
     
-    # 2. Convert user input to lowercase and check if it's in our map
-    search_term = subject_map.get(subject_name.lower(), subject_name)
+    subject_lower = subject_name.lower()
     
-    url = "https://csjmu.ac.in/uiet-kanpur/syllabus/" 
-    # ... (the rest of the code remains the same, but BeautifulSoup will now search for search_term instead of subject_name)
-    # 2. Make an asynchronous request to get the website's HTML
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url)
+    # 1. THE DICTIONARY OF DEPARTMENTS: Maps the frontend choice to HTML keywords
+    if "ai" in subject_lower or "artificial intelligence" in subject_lower:
+        # Must check AI before standard CSE so they don't get mixed up!
+        keywords = ["artificial intelligence", "cse(ai)", "ai"]
+    elif "computer science" in subject_lower or "cse" in subject_lower:
+        keywords = ["computer science", "cse"]
+    elif "mechanical" in subject_lower:
+        keywords = ["mechanical", "me"]
+    elif "chemical" in subject_lower:
+        keywords = ["chemical", "che"]
+    elif "msme" in subject_lower or "material" in subject_lower:
+        keywords = ["material", "metallurgical", "msme"]
+    else:
+        # Fallback
+        keywords = [subject_lower]
         
-    # 3. Parse the HTML using BeautifulSoup
-    soup = BeautifulSoup(response.text, 'lxml')
+    url = "https://csjmu.ac.in/uiet-kanpur/syllabus/"
     
-    # 4. Find the link. We search for an <a> tag where the text matches the subject.
-    # (This logic might need tweaking based on how CSJMU exactly names their links)
-    link_tag = soup.find('a', string=lambda text: text and subject_name.lower() in text.lower())
-    
-    if not link_tag:
-        return {"error": f"Syllabus for {subject_name} not found on CSJMU site."}
+    try:
+        print(f"Scraping {url} for branch: {subject_name} using keywords: {keywords}...")
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
         
-    pdf_url = link_tag['href']
-    
-    # 5. Download the actual PDF
-    async with httpx.AsyncClient() as client:
-        pdf_response = await client.get(pdf_url)
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            return {"error": "Website blocked the request."}
+            
+        soup = BeautifulSoup(response.text, 'html.parser')
         
-    # 6. Save it locally (temporarily) so we can process it later
-    file_path = f"/tmp/{subject_name.replace(' ', '_')}_syllabus.pdf"
-    
-    with open(file_path, "wb") as f:
-        f.write(pdf_response.content)
+        pdf_link = None
         
-    return {"status": "success", "file_path": file_path}
+        for a_tag in soup.find_all('a', href=True):
+            text = a_tag.text.lower()
+            href = a_tag['href'].lower()
+            
+            if ".pdf" not in href:
+                continue
+                
+            # If the link matches ANY of our department keywords, grab it!
+            if any(keyword in text or keyword in href for keyword in keywords):
+                pdf_link = a_tag['href']
+                break
+                
+        if not pdf_link:
+            return {"error": f"Could not find the PDF syllabus for '{subject_name}'."}
+            
+        full_pdf_url = urljoin(url, pdf_link)
+        print(f"SUCCESS! Found PDF: {full_pdf_url}")
+        
+        return {"pdf_url": full_pdf_url}
+        
+    except Exception as e:
+        return {"error": f"Scraping failed: {str(e)}"}
