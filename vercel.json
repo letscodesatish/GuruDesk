@@ -2,14 +2,18 @@
   "version": 2,
   "builds": [
     {
-      "src": "backend/app/api/routes.py",
+      "src": "api/**/*.py",
       "use": "@vercel/python"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
     }
   ],
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "backend/app/api/routes.py"
+      "destination": "/api/routes.py"
     }
   ]
 }
