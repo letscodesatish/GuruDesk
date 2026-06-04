@@ -1,0 +1,123 @@
+{
+    "course_title": "Mathematics-I",
+    "total_weeks": 14,
+    "roadmap": [
+        {
+            "week_number": 1,
+            "topics_to_cover": [
+                "Sequences & Series: Definition",
+                "Monotonic sequences",
+                "Bounded sequences"
+            ],
+            "learning_outcome": "Understand the basics of sequences and series"
+        },
+        {
+            "week_number": 2,
+            "topics_to_cover": [
+                "Convergent and Divergent Sequences",
+                "Infinite series",
+                "Oscillating and Geometric series"
+            ],
+            "learning_outcome": "Determine convergence and divergence of sequences and series"
+        },
+        {
+            "week_number": 3,
+            "topics_to_cover": [
+                "Convergence tests",
+                "nth Term test",
+                "Integral test"
+            ],
+            "learning_outcome": "Apply convergence tests to series"
+        },
+        {
+            "week_number": 4,
+            "topics_to_cover": [
+                "Comparison Test",
+                "Limit Comparison test",
+                "Ratio test"
+            ],
+            "learning_outcome": "Apply comparison tests for series convergence"
+        },
+        {
+            "week_number": 5,
+            "topics_to_cover": [
+                "Root test",
+                "Alternating series",
+                "Absolute and Conditional convergence"
+            ],
+            "learning_outcome": "Analyze series for absolute and conditional convergence"
+        },
+        {
+            "week_number": 6,
+            "topics_to_cover": [
+                "Leibnitz test",
+                "Limit Continuity and differentiability of functions of two variables"
+            ],
+            "learning_outcome": "Understand multivariable functions and continuity"
+        },
+        {
+            "week_number": 7,
+            "topics_to_cover": [
+                "Euler's theorem for homogeneous equations",
+                "Tangent plane and normal"
+            ],
+            "learning_outcome": "Apply Euler's theorem and analyze functions of two variables"
+        },
+        {
+            "week_number": 8,
+            "topics_to_cover": [
+                "Change of variables",
+                "chain rule",
+                "Jacobians"
+            ],
+            "learning_outcome": "Apply change of variables and chain rule"
+        },
+        {
+            "week_number": 9,
+            "topics_to_cover": [
+                "Taylor's Theorem for two variables",
+                "Extrema of functions of two or more variables"
+            ],
+            "learning_outcome": "Analyze functions of two variables for extrema"
+        },
+        {
+            "week_number": 10,
+            "topics_to_cover": [
+                "Lagrange's method of undetermined multipliers"
+            ],
+            "learning_outcome": "Apply Lagrange's method for optimization"
+        },
+        {
+            "week_number": 11,
+            "topics_to_cover": [
+                "Review of curve tracing",
+                "Double and Triple integrals"
+            ],
+            "learning_outcome": "Evaluate multiple integrals"
+        },
+        {
+            "week_number": 12,
+            "topics_to_cover": [
+                "Change of order of integration",
+                "Gamma and Beta functions"
+            ],
+            "learning_outcome": "Apply change of order of integration and special functions"
+        },
+        {
+            "week_number": 13,
+            "topics_to_cover": [
+                "Dirichlet's integral",
+                "Applications of Multiple integrals"
+            ],
+            "learning_outcome": "Apply multiple integrals to solve problems"
+        },
+        {
+            "week_number": 14,
+            "topics_to_cover": [
+                "Differentiation of vectors",
+                "gradient, divergence, curl and their physical meaning"
+            ],
+            "learning_outcome": "Analyze vector calculus concepts"
+        }
+    ]
+}
