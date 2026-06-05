@@ -1,19 +1,12 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "backend/app/main.py",
-      "use": "@vercel/python"
+  "experimentalServices": {
+    "web": {
+      "entrypoint": "frontend",
+      "routePrefix": "/"
     },
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/next"
+    "api": {
+      "entrypoint": "backend/app/main.py",
+      "routePrefix": "/api/(.*)"
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "backend/app/main.py"
-    }
-  ]
+  }
 }
