@@ -1,26 +1,21 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware # <-- NEW
-from app.api.routes import router as api_router
+from fastapi.middleware.cors import CORSMiddleware
+from app.api.routes import router as api_router # Adjust to match your import
 
-app = FastAPI(title="Professor Assistant API")
+app = FastAPI()
 
-# --- NEW CORS BLOCK ---
+# Enable CORS completely for Vercel's multi-container service environment
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], # Allow Next.js to connect
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# ----------------------
 
-app.include_router(api_router, prefix="/api/v1")
+# 💡 Include your routes router with the explicit '/api' prefix
+app.include_router(api_router, prefix="/api")
 
-@app.get("/")
-async def health_check():
-    return {"status": "online", "message": "Ready to help the Professor!"}
-
-# Inside your main.py
-
-app.include_router(api_router, prefix="/api/v1")
-
+@app.get("/api/health")
+def health_check():
+    return {"status": "healthy"}

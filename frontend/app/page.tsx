@@ -80,478 +80,81 @@ function PlaceholderView({ title, desc }: { title: string, desc: string }) {
 // 2. TEACHING MODULE (Planner, Vault, Exam Builder) - COMPLETE & UNIFIED
 // ============================================================================
 function TeachingModule() {
-  const [activeTab, setActiveTab] = useState<"planner" | "notes" | "assessment">("planner");
+  const [topic, setTopic] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [roadmap, setRoadmap] = useState<any>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // --- PLANNER STATES ---
-  const [subject, setSubject] = useState("Computer Science and Engineering");
-  const [weeks, setWeeks] = useState(14); 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [roadmapData, setRoadmapData] = useState<any>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [isEditing, setIsEditing] = useState(false); 
-  const [savedRoadmaps, setSavedRoadmaps] = useState<any[]>([]);
-  const [isSavingRoadmap, setIsSavingRoadmap] = useState(false);
-  const [roadmapPdfUrl, setRoadmapPdfUrl] = useState<string | null>(null); 
+  // 💡 Handled directly via event action to avoid infinite render loops
+  const handleCreateRoadmap = async () => {
+    if (!topic.trim()) return;
+    
+    setLoading(true);
+    setErrorMessage(null);
 
-  // --- NOTES STATES ---
-  const [notesList, setNotesList] = useState<string[]>([]);
-  const [noteUploadFile, setNoteUploadFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+    try {
+      // 🚀 Use a clean relative path so Vercel hooks into the right route
+      const response = await fetch("/api/v1/roadmaps", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ topic }),
+      });
 
-  // --- ASSESSMENT STATES ---
-  const [assessmentFiles, setAssessmentFiles] = useState<File[]>([]); 
-  const [paperTitle, setPaperTitle] = useState("Mid-Term Examination");
-  const [timeAllowed, setTimeAllowed] = useState("3 Hrs");
-  const [instructions, setInstructions] = useState("All questions are compulsory.");
-  const [isGeneratingPaper, setIsGeneratingPaper] = useState(false);
-  const [generatedPaper, setGeneratedPaper] = useState<any>(null);
-  const [criteria, setCriteria] = useState([{ id: Date.now(), count: 5, type: "MCQ", marks: 1 }]);
-  
-  // NEW: 3-Step Assessment States
-  const [savedPapers, setSavedPapers] = useState<any[]>([]);
-  const [isEditingPaper, setIsEditingPaper] = useState(false);
-  const [isSavingPaper, setIsSavingPaper] = useState(false);
-  const [paperPdfUrl, setPaperPdfUrl] = useState<string | null>(null);
+      if (!response.ok) {
+        throw new Error(`Server returned status code: ${response.status}`);
+      }
 
-  // ==========================================
-  // INITIAL DATA FETCHING
-  // ==========================================
-  useEffect(() => {
-    if (activeTab === "planner") {
-      fetch("http://localhost:8080/api/v1/roadmaps")
-        .then(res => res.json())
-        .then(data => { if (data.status === "success") setSavedRoadmaps(data.data || []); });
-    } else if (activeTab === "assessment") {
-      fetch("http://localhost:8080/api/v1/papers")
-        .then(res => res.json())
-        .then(data => { if (data.status === "success") setSavedPapers(data.data || []); });
+      const data = await response.json();
+      setRoadmap(data); // Save the returned Python response payload into state
+    } catch (err: any) {
+      console.error("Failed to generate roadmap content:", err);
+      setErrorMessage(err.message || "An error occurred while contacting the server.");
+    } finally {
+      setLoading(false);
     }
-  }, [activeTab]);
-
-  // ==========================================
-  // PLANNER API
-  // ==========================================
-  const handleDownloadPDF = async (e: any) => {
-    e.preventDefault(); setLoading(true); setError("");
-    try {
-      const response = await fetch("http://localhost:8080/api/v1/download-syllabus", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subject, weeks }) });
-      const data = await response.json();
-      if (data.status === "success") window.open(data.url, "_blank"); else setError(data.message || "Failed.");
-    } catch { setError("Server connection failed."); } finally { setLoading(false); }
-  };
-
-  const handleGenerateRoadmap = async (e: any) => {
-    e.preventDefault(); if (!imageFile) return setError("Upload screenshot first!");
-    setLoading(true); setError(""); setRoadmapData(null); setIsEditing(false); setRoadmapPdfUrl(null);
-    try {
-      const formData = new FormData(); formData.append("file", imageFile); formData.append("subject", subject); formData.append("weeks", weeks.toString()); 
-      const response = await fetch("http://localhost:8080/api/v1/generate-roadmap-image", { method: "POST", body: formData });
-      const data = await response.json();
-      if (data.status === "success") setRoadmapData(data.data);
-      else setError(data.message || "Failed.");
-    } catch { setError("Server connection failed."); } finally { setLoading(false); }
-  };
-
-  const handleSaveRoadmap = async () => {
-    setIsSavingRoadmap(true);
-    try {
-      const response = await fetch("http://localhost:8080/api/v1/save-roadmap-pdf", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject, roadmap_data: roadmapData })
-      });
-      const data = await response.json();
-      if (data.status === "success") {
-        setRoadmapPdfUrl(data.pdf_url);
-        alert("✅ Successfully saved as PDF to Supabase Cloud Dashboard!");
-        const freshRes = await fetch("http://localhost:8080/api/v1/roadmaps");
-        const freshData = await freshRes.json();
-        if (freshData.status === "success") setSavedRoadmaps(freshData.data || []);
-      }
-    } finally { setIsSavingRoadmap(false); }
-  };
-
-  const updateWeekData = (weekIndex: number, field: string, value: string) => {
-    const newData = { ...roadmapData };
-    newData.roadmap[weekIndex].topics_to_cover = value.split('\n');
-    setRoadmapData(newData);
-  };
-
-  // ==========================================
-  // NOTES API
-  // ==========================================
-  const fetchNotes = async () => {
-    try { const res = await fetch("http://localhost:8080/api/v1/notes"); const data = await res.json(); if (data.status === "success") setNotesList(data.notes); } catch (err) {}
-  };
-  useEffect(() => { if (activeTab === "notes") fetchNotes(); }, [activeTab]);
-
-  const handleUploadNote = async (e: any) => {
-    e.preventDefault(); if (!noteUploadFile) return; setIsUploading(true);
-    try {
-      const formData = new FormData(); formData.append("file", noteUploadFile);
-      const res = await fetch("http://localhost:8080/api/v1/upload-note", { method: "POST", body: formData });
-      const data = await res.json(); if (data.status === "success") { setNoteUploadFile(null); fetchNotes(); }
-    } finally { setIsUploading(false); }
-  };
-
-  // ==========================================
-  // ASSESSMENT API
-  // ==========================================
-  const handleFileSelection = (e: any) => { if (e.target.files) setAssessmentFiles((prev) => [...prev, ...Array.from(e.target.files as FileList)]); };
-  const removeAssessmentFile = (indexToRemove: number) => setAssessmentFiles(assessmentFiles.filter((_, index) => index !== indexToRemove));
-  const addCriteriaRow = () => setCriteria([...criteria, { id: Date.now(), count: 1, type: "Short Answer", marks: 5 }]);
-  const removeCriteriaRow = (id: number) => { if (criteria.length > 1) setCriteria(criteria.filter(c => c.id !== id)); };
-  const updateCriteria = (id: number, field: string, value: string | number) => setCriteria(criteria.map(c => c.id === id ? { ...c, [field]: value } : c));
-
-  // 1. GENERATE
-  const handleGeneratePaper = async (e: any) => {
-    e.preventDefault(); if (assessmentFiles.length === 0) return alert("Upload PDF first!");
-    setIsGeneratingPaper(true); setGeneratedPaper(null); setPaperPdfUrl(null); setIsEditingPaper(false);
-    try {
-      const formData = new FormData(); assessmentFiles.forEach((file) => formData.append("files", file));
-      formData.append("criteria", JSON.stringify(criteria)); 
-      
-      const res = await fetch("http://localhost:8080/api/v1/generate-paper", { method: "POST", body: formData });
-      const data = await res.json(); 
-      if (data.status === "success") setGeneratedPaper(data.data); 
-      else alert(data.message || "Failed.");
-    } finally { setIsGeneratingPaper(false); }
-  };
-
-  // 2. SAVE AS PDF
-  const handleSavePaper = async () => {
-    setIsSavingPaper(true);
-    try {
-      const response = await fetch("http://localhost:8080/api/v1/save-paper-pdf", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          title: paperTitle, 
-          timeAllowed: timeAllowed, 
-          instructions: instructions, 
-          paper_data: generatedPaper 
-        })
-      });
-      const data = await response.json();
-      if (data.status === "success") {
-        setPaperPdfUrl(data.pdf_url);
-        alert("✅ Question Paper securely saved to Supabase!");
-        const freshRes = await fetch("http://localhost:8080/api/v1/papers");
-        const freshData = await freshRes.json();
-        if (freshData.status === "success") setSavedPapers(freshData.data || []);
-      }
-    } finally { setIsSavingPaper(false); }
-  };
-
-  // 3. EDIT QUESTIONS
-  const updateQuestionData = (secIndex: number, qIndex: number, value: string) => {
-    const newData = { ...generatedPaper };
-    newData.sections[secIndex].questions[qIndex].question_text = value;
-    setGeneratedPaper(newData);
-    setPaperPdfUrl(null); 
   };
 
   return (
-    <div className="p-8 text-slate-800 w-full max-w-6xl mx-auto">
-      <div className="space-y-6">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900">Teaching Preparation</h1>
-          <p className="text-slate-500 mt-1">Manage your curriculum, notes, and build exams.</p>
-        </header>
-        <div className="flex bg-white shadow-sm border border-slate-200 rounded-lg overflow-hidden p-1">
-          <button onClick={() => setActiveTab("planner")} className={`flex-1 py-3 px-4 font-bold text-sm rounded-md transition-all ${activeTab === "planner" ? "bg-blue-50 text-blue-700 shadow-sm" : "text-slate-500 hover:bg-slate-50"}`}>🧠 Curriculum Planner</button>
-          <button onClick={() => setActiveTab("notes")} className={`flex-1 py-3 px-4 font-bold text-sm rounded-md transition-all ${activeTab === "notes" ? "bg-blue-50 text-blue-700 shadow-sm" : "text-slate-500 hover:bg-slate-50"}`}>📚 My Vault</button>
-          <button onClick={() => setActiveTab("assessment")} className={`flex-1 py-3 px-4 font-bold text-sm rounded-md transition-all ${activeTab === "assessment" ? "bg-blue-50 text-blue-700 shadow-sm" : "text-slate-500 hover:bg-slate-50"}`}>📝 Exam Builder</button>
+    <div className="p-8 max-w-4xl mx-auto">
+      <h2 className="text-2xl font-bold text-slate-800 mb-4">Teaching Preparation Workspace</h2>
+      
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+        <label className="block text-sm font-semibold text-slate-600 mb-2">
+          Enter Course Topic
+        </label>
+        <div className="flex gap-3">
+          <input
+            type="text"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="e.g., Artificial Intelligence, Pothole Detection Systems..."
+            className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            onClick={handleCreateRoadmap}
+            disabled={loading}
+            className="px-5 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-slate-300 transition-colors"
+          >
+            {loading ? "Generating via AI..." : "Generate Roadmap"}
+          </button>
         </div>
         
-        {/* ========================================================= */}
-        {/* --- PLANNER UI --- */}
-        {/* ========================================================= */}
-        {activeTab === "planner" && (
-          <div className="space-y-8 animate-fade-in">
-            {/* SECTION 1: View Saved Roadmaps */}
-            <div className="bg-white p-6 rounded-lg shadow-md border border-slate-200">
-              <h3 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">📂 Your Saved Roadmaps</h3>
-              {(!savedRoadmaps || savedRoadmaps.length === 0) ? (
-                <p className="text-sm text-slate-500 italic">No roadmaps saved yet.</p>
-              ) : (
-                <div className="flex gap-4 overflow-x-auto pb-2">
-                  {savedRoadmaps.map((map) => (
-                    <div key={map.id} className="min-w-[200px] bg-slate-50 p-4 rounded border border-slate-200 shadow-sm flex flex-col justify-between">
-                      <p className="font-bold text-sm text-slate-800 truncate mb-3">{map.subject}</p>
-                      <button onClick={() => window.open(map.pdf_url, "_blank")} className="w-full py-2 text-sm bg-blue-100 text-blue-800 font-bold rounded hover:bg-blue-200 transition-colors flex justify-center items-center gap-2">
-                        👁️ View & Print PDF
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* SECTION 2: Generate New Roadmap */}
-            <div className="bg-white p-6 rounded-lg shadow-md space-y-6 border border-slate-200">
-              <h3 className="text-lg font-bold text-slate-800 border-b pb-2">✨ Create New Roadmap</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">1. Select Subject</label>
-                  <select value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full border border-slate-300 rounded-md p-3 text-black bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option value="Computer Science and Engineering">Computer Science and Engineering (CSE)</option>
-                    <option value="Artificial Intelligence">CSE (Artificial Intelligence)</option>
-                    <option value="Mechanical Engineering">Mechanical Engineering</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">2. Target Course Duration: <span className="text-blue-600 font-bold">{weeks} Weeks</span></label>
-                  <input type="range" min="4" max="20" value={weeks} onChange={(e) => setWeeks(parseInt(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600 mt-4" />
-                </div>
-              </div>
-              <div className="border-2 border-dashed border-slate-300 rounded-md p-6 text-center bg-slate-50 hover:bg-slate-100">
-                <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 cursor-pointer" />
-              </div>
-              
-              <div className="flex gap-4">
-                <button onClick={handleDownloadPDF} disabled={loading} className="w-1/3 bg-slate-800 text-white font-semibold py-3 rounded-md hover:bg-slate-900 shadow">View Full PDF</button>
-                <button onClick={handleGenerateRoadmap} disabled={loading || !imageFile} className="w-2/3 bg-blue-600 text-white font-semibold py-3 rounded-md hover:bg-blue-700 disabled:bg-blue-300 shadow">
-                  {loading ? "AI is Analyzing..." : "Generate Interactive Roadmap"}
-                </button>
-              </div>
-            </div>
-            
-            {/* SECTION 3: Results & Save Action */}
-            {roadmapData && (
-              <div className="bg-white p-8 rounded-lg shadow-md border-t-4 border-blue-600">
-                <div className="mb-6 border-b pb-4 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-                  <div>
-                    <h2 className="text-2xl font-bold">{roadmapData.course_title || subject}</h2>
-                    <p>Adjustable {roadmapData.total_weeks || weeks}-Week Plan</p>
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    <button onClick={() => setIsEditing(!isEditing)} className="px-4 py-2 bg-slate-200 rounded-md font-medium shadow-sm hover:bg-slate-300 transition">
-                      {isEditing ? "Lock Plan" : "Edit Details"}
-                    </button>
-                    <button onClick={() => { if (roadmapPdfUrl) window.open(roadmapPdfUrl, "_blank"); else alert("Please click '☁️ Save to Supabase' first!"); }} className="px-4 py-2 bg-slate-200 text-slate-800 rounded-md font-bold shadow-sm hover:bg-slate-300 transition-colors flex items-center gap-2">
-                      🖨️ Print PDF
-                    </button>
-                    <button onClick={handleSaveRoadmap} disabled={isSavingRoadmap || roadmapPdfUrl !== null} className={`px-4 py-2 font-bold rounded-md shadow-sm transition-colors flex items-center gap-2 ${roadmapPdfUrl ? "bg-green-600 text-white cursor-not-allowed" : "bg-slate-800 text-white hover:bg-slate-900"}`}>
-                      {roadmapPdfUrl ? "✅ Saved as PDF" : (isSavingRoadmap ? "⏳ Saving..." : "☁️ Save to Supabase")}
-                    </button>
-                  </div>
-                </div>     
-
-                <div className="max-h-[650px] overflow-y-auto pr-2 space-y-6">
-                  {roadmapData.roadmap.map((week: any, index: number) => (
-                     <div key={week.week_number} className="flex gap-6 bg-slate-50 p-6 rounded-lg border border-slate-200 shadow-sm">
-                        <div className="bg-blue-100 text-blue-800 font-bold px-4 py-2 rounded-md text-center shrink-0 h-fit">
-                           <span className="block text-xs uppercase">Week</span>
-                           <span className="block text-2xl">{week.week_number}</span>
-                        </div>
-                        <div className="flex-grow space-y-3">
-                          <h3 className="text-sm font-bold uppercase">Topics:</h3>
-                          {isEditing ? (
-                            <textarea className="w-full bg-white border p-3 rounded-md min-h-[100px]" value={week.topics_to_cover.join('\n')} onChange={(e) => updateWeekData(index, "topics", e.target.value)} />
-                          ) : (
-                            <ul className="list-disc ml-4 text-slate-800">
-                              {week.topics_to_cover.map((t: string, i: number) => <li key={i}>{t}</li>)}
-                            </ul>
-                          )}
-                        </div>
-                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ========================================================= */}
-        {/* --- NOTES UI --- */}
-        {/* ========================================================= */}
-        {activeTab === "notes" && (
-          <div className="space-y-6 animate-fade-in">
-             <div className="bg-white p-6 rounded-lg shadow-md border border-slate-200 flex items-center justify-between gap-4">
-                <div className="flex-grow">
-                  <input type="file" onChange={(e) => setNoteUploadFile(e.target.files?.[0] || null)} className="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 cursor-pointer" />
-                </div>
-                <button onClick={handleUploadNote} disabled={!noteUploadFile || isUploading} className="bg-green-600 text-white px-6 py-2 rounded-md font-bold hover:bg-green-700 whitespace-nowrap">{isUploading ? "Uploading..." : "Save Note to Vault"}</button>
-             </div>
-             <div className="bg-white p-6 rounded-lg shadow-md border space-y-4 border-slate-200">
-                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">📂 Personal Teaching Vault</h2>
-                {notesList.length === 0 ? (
-                  <div className="text-center p-12 bg-slate-50 rounded-md border-2 border-dashed border-slate-200 text-slate-500">No notes uploaded yet.</div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-4 mt-4">
-                    {notesList.map((file) => (
-                      <div key={file} className="flex justify-between items-center p-4 bg-slate-50 border rounded-lg border-slate-200">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">📄</span>
-                          <span className="font-semibold text-slate-800">{file}</span>
-                        </div>
-                        <button onClick={() => window.open(`http://localhost:8080/api/v1/notes/${file}`, "_blank")} className="text-blue-700 bg-blue-100 px-4 py-2 rounded-md font-bold hover:bg-blue-200">👁️ Open</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-             </div>
-          </div>
-        )}
-
-        {/* ========================================================= */}
-        {/* --- EXAM BUILDER UI --- */}
-        {/* ========================================================= */}
-        {activeTab === "assessment" && (
-           <div className="space-y-8 animate-fade-in">
-              
-              {/* SECTION 1: View Saved Papers */}
-              <div className="bg-white p-6 rounded-lg shadow-md border border-slate-200">
-                <h3 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">📂 Your Saved Papers</h3>
-                {(!savedPapers || savedPapers.length === 0) ? (
-                  <p className="text-sm text-slate-500 italic">No question papers saved yet.</p>
-                ) : (
-                  <div className="flex gap-4 overflow-x-auto pb-2">
-                    {savedPapers.map((paper) => (
-                      <div key={paper.id} className="min-w-[200px] bg-slate-50 p-4 rounded border border-slate-200 shadow-sm flex flex-col justify-between">
-                        <p className="font-bold text-sm text-slate-800 truncate mb-3">{paper.title}</p>
-                        <button onClick={() => window.open(paper.pdf_url, "_blank")} className="w-full py-2 text-sm bg-purple-100 text-purple-800 font-bold rounded hover:bg-purple-200 transition-colors flex justify-center items-center gap-2">
-                          👁️ View & Print PDF
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* SECTION 2: Generate New Paper */}
-              <div className="bg-white p-8 rounded-lg shadow-md space-y-8 border border-slate-200">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">1. Exam Details</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Paper Title</label>
-                      <input type="text" value={paperTitle} onChange={(e) => setPaperTitle(e.target.value)} className="w-full border border-slate-300 rounded p-3 bg-white text-black focus:ring-blue-500 outline-none" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Time Allowed</label>
-                      <input type="text" value={timeAllowed} onChange={(e) => setTimeAllowed(e.target.value)} placeholder="e.g. 3 Hrs" className="w-full border border-slate-300 rounded p-3 bg-white text-black focus:ring-blue-500 outline-none" />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Important Instructions</label>
-                      <input type="text" value={instructions} onChange={(e) => setInstructions(e.target.value)} className="w-full border border-slate-300 rounded p-3 bg-white text-black focus:ring-blue-500 outline-none" />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">2. Source Material (Upload PDFs)</h3>
-                  <div className="border-2 border-dashed border-slate-300 rounded-md p-6 text-center bg-slate-50 hover:bg-slate-100 mb-4">
-                    <input type="file" accept="application/pdf" multiple onChange={handleFileSelection} className="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 cursor-pointer" />
-                  </div>
-                  {assessmentFiles.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-sm font-bold text-slate-700">Attached Documents:</p>
-                      {assessmentFiles.map((f, i) => (
-                        <div key={i} className="flex justify-between items-center text-sm font-bold text-blue-800 bg-blue-50 p-3 rounded border border-blue-100">
-                          <span>📄 {f.name}</span>
-                          <button onClick={() => removeAssessmentFile(i)} className="text-red-500 hover:text-red-700 text-lg">✕</button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">3. Design Question Structure</h3>
-                  <div className="space-y-4">
-                    {criteria.map((row) => (
-                      <div key={row.id} className="flex gap-4 items-center bg-slate-50 p-4 rounded-md border border-slate-200">
-                        <div className="flex-1">
-                          <label className="block text-xs font-semibold text-slate-500 uppercase">No. of Questions</label>
-                          <input type="number" min="1" value={row.count} onChange={(e) => updateCriteria(row.id, "count", parseInt(e.target.value))} className="mt-1 w-full border rounded p-2 outline-none focus:border-blue-500 text-black bg-white" />
-                        </div>
-                        <div className="flex-1">
-                          <label className="block text-xs font-semibold text-slate-500 uppercase">Question Type</label>
-                          <select value={row.type} onChange={(e) => updateCriteria(row.id, "type", e.target.value)} className="mt-1 w-full border rounded p-2 outline-none focus:border-blue-500 bg-white text-black">
-                            <option value="MCQ">Multiple Choice (MCQ)</option>
-                            <option value="One Word">One Word Answer</option>
-                            <option value="Short Answer">Short Answer</option>
-                            <option value="Long Answer">Long Answer</option>
-                          </select>
-                        </div>
-                        <div className="flex-1">
-                          <label className="block text-xs font-semibold text-slate-500 uppercase">Marks (Each)</label>
-                          <input type="number" min="1" value={row.marks} onChange={(e) => updateCriteria(row.id, "marks", parseInt(e.target.value))} className="mt-1 w-full border rounded p-2 outline-none focus:border-blue-500 text-black bg-white" />
-                        </div>
-                        <button onClick={() => removeCriteriaRow(row.id)} disabled={criteria.length === 1} className="mt-5 p-2 text-red-500 hover:bg-red-50 rounded-md disabled:opacity-30">✖</button>
-                      </div>
-                    ))}
-                  </div>
-                  <button onClick={addCriteriaRow} className="mt-4 text-blue-600 font-bold text-sm hover:underline flex items-center gap-1">➕ Add Another Section</button>
-                </div>
-
-                <button onClick={handleGeneratePaper} disabled={isGeneratingPaper || assessmentFiles.length === 0} className="w-full bg-blue-600 text-white font-bold py-4 rounded-md hover:bg-blue-700 shadow flex justify-center items-center gap-2">
-                  {isGeneratingPaper ? "Reading Notes & Writing Exam..." : "Generate Question Paper"}
-                </button>
-              </div>
-
-              {/* SECTION 3: Results & Save Action */}
-              {generatedPaper && (
-                <div className="bg-white p-8 rounded-lg shadow-md border-t-4 border-purple-600">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b pb-4 gap-4">
-                    <div>
-                      <h3 className="font-bold text-xl text-slate-800">{paperTitle}</h3>
-                      <p className="text-slate-500">Review, edit, and save your paper.</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <button onClick={() => setIsEditingPaper(!isEditingPaper)} className="px-4 py-2 bg-slate-200 text-slate-800 font-semibold rounded-md shadow-sm hover:bg-slate-300 transition">
-                        {isEditingPaper ? "Lock Paper" : "Edit Questions"}
-                      </button>
-                      <button onClick={() => { if (paperPdfUrl) window.open(paperPdfUrl, "_blank"); else alert("Please click '☁️ Save to Supabase' first!"); }} className="px-4 py-2 bg-purple-100 text-purple-700 font-semibold rounded-md shadow-sm hover:bg-purple-200 transition">
-                        🖨️ Print PDF
-                      </button>
-                      <button onClick={handleSavePaper} disabled={isSavingPaper || paperPdfUrl !== null} className={`px-4 py-2 font-semibold rounded-md shadow-sm transition ${paperPdfUrl ? "bg-green-600 text-white cursor-not-allowed" : "bg-slate-800 text-white hover:bg-slate-900"}`}>
-                        {paperPdfUrl ? "✅ Saved as PDF" : (isSavingPaper ? "⏳ Saving..." : "☁️ Save to Supabase")}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-slate-50 text-black p-8 border border-slate-200 rounded-lg max-h-[600px] overflow-y-auto">
-                    <div className="text-center border-b-2 border-black pb-4 mb-6">
-                      <h1 className="text-2xl font-bold uppercase tracking-wider">{paperTitle}</h1>
-                      <div className="flex justify-between mt-4 font-semibold text-black">
-                        <span>Time Allowed: {timeAllowed}</span>
-                        <span>Maximum Marks: {generatedPaper.total_marks || "100"}</span>
-                      </div>
-                      <div className="text-left mt-4 text-sm italic border border-slate-300 p-3 bg-white text-slate-800 rounded">
-                        Note: {instructions}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-8">
-                      {generatedPaper.sections?.map((sec: any, secIndex: number) => (
-                        <div key={secIndex}>
-                          <h2 className="text-lg font-bold underline mb-4">{sec.section_title}</h2>
-                          <div className="space-y-4">
-                            {sec.questions.map((q: any, qIndex: number) => (
-                              <div key={qIndex} className="flex justify-between items-start gap-4">
-                                <div className="flex gap-2 flex-grow text-black font-medium">
-                                  <span className="shrink-0">Q{qIndex+1}.</span>
-                                  {isEditingPaper ? (
-                                    <textarea className="w-full border p-2 rounded outline-none focus:border-blue-500 min-h-[60px]" value={q.question_text} onChange={(e) => updateQuestionData(secIndex, qIndex, e.target.value)} />
-                                  ) : (
-                                    <span className="leading-relaxed">{q.question_text}</span>
-                                  )}
-                                </div>
-                                <span className="font-bold text-slate-800 shrink-0">[{q.marks}]</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-           </div>
+        {errorMessage && (
+          <p className="text-sm font-medium text-red-500 mt-2">❌ {errorMessage}</p>
         )}
       </div>
+
+      {/* Render your workspace roadmap output container */}
+      {roadmap && (
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 className="text-xl font-bold mb-4 text-slate-800">Generated Syllabus Map</h3>
+          <pre className="bg-slate-50 p-4 rounded-lg overflow-x-auto text-sm">
+            {JSON.stringify(roadmap, null, 2)}
+          </pre>
+        </div>
+      )}
     </div>
   );
 }
